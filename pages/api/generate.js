@@ -17,6 +17,8 @@ export default async function handler(req, res) {
 
   const userGoal = goal.trim();
 
+  console.log("API received goal:", userGoal);
+
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4",
@@ -24,7 +26,7 @@ export default async function handler(req, res) {
         {
           role: "user",
           content: `
-You are an AI goal coach. Given the user's goal, return a gamified level plan like this:
+You are an AI goal coach. Given the user's goal, return a gamified level plan in this JSON format exactly:
 [
   { "level": 1, "title": "Level 1 title", "tasks": ["Task 1", "Task 2"], "xp": 100 },
   ...
@@ -38,12 +40,15 @@ USER GOAL: "${userGoal}"
     });
 
     const text = response.choices[0].message.content;
+    console.log("OpenAI response:", text);
 
     try {
       const plan = JSON.parse(text);
-      res.status(200).json({ plan });
+      return res.status(200).json({ plan });
     } catch (parseErr) {
-      res.status(200).json({
+      console.error("JSON parse error:", parseErr);
+      // Fallback if parsing fails — send raw text inside a single-level plan
+      return res.status(200).json({
         plan: [
           {
             level: 1,
@@ -55,7 +60,7 @@ USER GOAL: "${userGoal}"
       });
     }
   } catch (err) {
-    console.error("OpenAI Error:", err);
-    res.status(500).json({ error: "Failed to generate plan" });
+    console.error("OpenAI API error:", err);
+    return res.status(500).json({ error: "Failed to generate plan" });
   }
 }
