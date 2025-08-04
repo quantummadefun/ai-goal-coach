@@ -5,7 +5,17 @@ const openai = new OpenAI({
 });
 
 export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed, use POST" });
+  }
+
   const { goal } = req.body;
+
+  if (!goal || typeof goal !== "string") {
+    return res.status(400).json({ error: "Missing or invalid 'goal' in request body" });
+  }
+
+  const userGoal = goal.trim();
 
   try {
     const response = await openai.chat.completions.create({
@@ -20,7 +30,7 @@ You are an AI goal coach. Given the user's goal, return a gamified level plan li
   ...
 ]
 
-USER GOAL: "${goal}"
+USER GOAL: "${userGoal}"
           `,
         },
       ],
